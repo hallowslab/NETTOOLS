@@ -1,6 +1,8 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 
+from .audit import record_tool_run
+from .models import ToolRun
 from .services.whereis import lookup_domains
 from .services.whois import lookup_whois
 from .services.spf import lookup_spf
@@ -52,6 +54,7 @@ def whereis(request):
     if request.method == "POST":
         domains = request.POST.get("domains", "")
         lookup_result = lookup_domains(domains)
+        record_tool_run(request.user, ToolRun.TASK_WHEREIS, domains, lookup_result)
 
     return render(
         request,
@@ -71,6 +74,7 @@ def whois(request):
     if request.method == "POST":
         domains = request.POST.get("domains", "")
         lookup_result = lookup_whois(domains)
+        record_tool_run(request.user, ToolRun.TASK_WHOIS, domains, lookup_result)
 
     return render(
         request,
@@ -90,6 +94,7 @@ def spf(request):
     if request.method == "POST":
         domains = request.POST.get("domains", "")
         lookup_result = lookup_spf(domains)
+        record_tool_run(request.user, ToolRun.TASK_SPF, domains, lookup_result)
 
     return render(
         request,
@@ -109,6 +114,7 @@ def propagation(request):
     if request.method == "POST":
         domains = request.POST.get("domains", "")
         lookup_result = lookup_propagation(domains)
+        record_tool_run(request.user, ToolRun.TASK_PROPAGATION, domains, lookup_result)
 
     return render(
         request,
