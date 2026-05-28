@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}NETTOOLS - DNS Propagation Checker{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="breadcrumbs">
+            <ul>
+                <li><a href="{% url 'nettools:nettools_home' %}">NETTOOLS</a></li>
+                <li class="is-active"><a href="#" aria-current="page">DNS Propagation Checker</a></li>
+            </ul>
+        </nav>
+
+        <h1 class="title">DNS Propagation Checker</h1>
+        <p class="subtitle">Bulk verify DNS A-record consistency across multiple global public resolvers</p>
+
+        <div class="box">
+            <form method="post" action="">
+                {% csrf_token %}
+                <div class="field">
+                    <label class="label" for="domains">Domains</label>
+                    <div class="control">
+                        <textarea id="domains" name="domains" class="textarea" rows="8"
+                            placeholder="google.com&#10;wikipedia.org">{{ domains }}</textarea>
+                    </div>
+                    <p class="help">One domain per line. Maximum 50 domains per lookup.</p>
+                </div>
+                <div class="field">
+                    <div class="control">
+                        <button type="submit" class="button is-primary">Run Propagation Check</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        {% if lookup_result %}
+        {% if lookup_result.input_errors %}
+        <div class="notification is-warning">
+            <ul>
+                {% for error in lookup_result.input_errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <div class="box">
+            <h2 class="title is-4">Results</h2>
+            {% for result in lookup_result.results %}
+            <div class="block" style="border-bottom: 1px solid #eee; padding-bottom: 1.5rem; margin-bottom: 1.5rem;">
+                <div class="level mb-2">
+                    <div class="level-left">
+                        <h3 class="title is-5 mb-0">{{ result.domain }}</h3>
+                    </div>
+                    <div class="level-right">
+                        {% if result.all_match %}
+                        <span class="tag is-success is-success is-medium">A Record Consistency: Match</span>
+                        {% else %}
+                        <span class="tag is-danger is-warning is-medium">A Record Consistency: Mismatch</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <table class="table is-fullwidth is-striped is-hoverable">
+                    <thead>
+                        <tr>
+                            <th>Resolver</th>
+                            <th>IP Address</th>
+                            <th>Resolved A Records</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for res in result.resolver_results %}
+                        <tr>
+                            <td><strong>{{ res.name }}</strong></td>
+                            <td><code>{{ res.ip }}</code></td>
+                            <td>
+                                {% if res.error %}
+                                <span class="has-text-grey-light italic">{{ res.error }}</span>
+                                {% else %}
+                                {% for ip in res.ips %}
+                                <code>{{ ip }}</code>{% if not forloop.last %}, {% endif %}
+                                {% endfor %}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if res.is_mismatch %}
+                                <span class="tag is-danger">Mismatch</span>
+                                {% elif res.error %}
+                                <span class="tag is-warning">Failed</span>
+                                {% else %}
+                                <span class="tag is-success">Consistent</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% empty %}
+            <p>No domains were submitted.</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

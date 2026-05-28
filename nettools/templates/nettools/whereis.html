@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}NETTOOLS - WhereIs{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="breadcrumbs">
+            <ul>
+                <li><a href="{% url 'nettools:nettools_home' %}">NETTOOLS</a></li>
+                <li class="is-active"><a href="#" aria-current="page">WhereIs</a></li>
+            </ul>
+        </nav>
+
+        <h1 class="title">WhereIs</h1>
+        <p class="subtitle">Bulk DNS lookup for domain A, MX, MX host A, and reverse DNS records</p>
+
+        <div class="box">
+            <form method="post" action="">
+                {% csrf_token %}
+                <div class="field">
+                    <label class="label" for="domains">Domains</label>
+                    <div class="control">
+                        <textarea id="domains" name="domains" class="textarea" rows="8"
+                            placeholder="gmail.com&#10;proton.me">{{ domains }}</textarea>
+                    </div>
+                    <p class="help">One domain per line. Maximum 50 domains per lookup.</p>
+                </div>
+                <div class="field">
+                    <div class="control">
+                        <button type="submit" class="button is-primary">Run WhereIs</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        {% if lookup_result %}
+        {% if lookup_result.input_errors %}
+        <div class="notification is-warning">
+            <ul>
+                {% for error in lookup_result.input_errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <div class="box">
+            <h2 class="title is-4">Results</h2>
+            {% for result in lookup_result.results %}
+            <div class="block">
+                <h3 class="title is-5 mb-2">{{ result.domain }}</h3>
+
+                {% if result.errors %}
+                <div class="tags">
+                    {% for error in result.errors %}
+                    <span class="tag is-warning">{{ error }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <table class="table is-fullwidth is-striped is-hoverable">
+                    <thead>
+                        <tr>
+                            <th>Record</th>
+                            <th>Host</th>
+                            <th>Priority</th>
+                            <th>IP</th>
+                            <th>Reverse DNS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in result.a_records %}
+                        <tr>
+                            <td><span class="tag is-info">A</span></td>
+                            <td><code>{{ result.domain }}</code></td>
+                            <td>-</td>
+                            <td><code>{{ record.ip }}</code></td>
+                            <td>
+                                {% if record.ptr %}
+                                {{ record.ptr }}
+                                {% elif record.ptr_error %}
+                                <span class="tag is-warning">{{ record.ptr_error }}</span>
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+
+                        {% for mx in result.mx_records %}
+                        {% if mx.a_records %}
+                        {% for record in mx.a_records %}
+                        <tr>
+                            <td><span class="tag is-primary">MX A</span></td>
+                            <td><code>{{ mx.host }}</code></td>
+                            <td>{{ mx.priority }}</td>
+                            <td><code>{{ record.ip }}</code></td>
+                            <td>
+                                {% if record.ptr %}
+                                {{ record.ptr }}
+                                {% elif record.ptr_error %}
+                                <span class="tag is-warning">{{ record.ptr_error }}</span>
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% else %}
+                        <tr>
+                            <td><span class="tag is-primary">MX</span></td>
+                            <td><code>{{ mx.host }}</code></td>
+                            <td>{{ mx.priority }}</td>
+                            <td>-</td>
+                            <td>-</td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% empty %}
+            <p>No domains were submitted.</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

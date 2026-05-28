@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}NETTOOLS{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <h1 class="title">NETTOOLS</h1>
+        <p class="subtitle">Network lookup and diagnostics tools</p>
+
+        <div class="columns is-multiline">
+            {% for function in functions %}
+            <div class="column is-one-third">
+                <a href="{% url function.url_name %}" class="card">
+                    <div class="card-content">
+                        <div class="level">
+                            <div class="level-left">
+                                <h2 class="title is-4 mb-0">{{ function.name }}</h2>
+                            </div>
+                            <div class="level-right">
+                                <span class="tag is-success">{{ function.status }}</span>
+                            </div>
+                        </div>
+                        <p>{{ function.description }}</p>
+                    </div>
+                </a>
+            </div>
+            {% empty %}
+            <div class="column">
+                <div class="notification is-light">No NETTOOLS functions are available.</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}

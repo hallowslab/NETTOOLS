@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}NETTOOLS - WHOIS Lookup{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="breadcrumbs">
+            <ul>
+                <li><a href="{% url 'nettools:nettools_home' %}">NETTOOLS</a></li>
+                <li class="is-active"><a href="#" aria-current="page">WHOIS Lookup</a></li>
+            </ul>
+        </nav>
+
+        <h1 class="title">WHOIS Lookup</h1>
+        <p class="subtitle">Bulk query for domain registrar, registry expiry date, and registrar delegation nameservers
+        </p>
+
+        <div class="box">
+            <form method="post" action="">
+                {% csrf_token %}
+                <div class="field">
+                    <label class="label" for="domains">Domains</label>
+                    <div class="control">
+                        <textarea id="domains" name="domains" class="textarea" rows="8"
+                            placeholder="google.com&#10;wikipedia.org">{{ domains }}</textarea>
+                    </div>
+                    <p class="help">One domain per line. Maximum 50 domains per lookup.</p>
+                </div>
+                <div class="field">
+                    <div class="control">
+                        <button type="submit" class="button is-primary">Run WHOIS</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        {% if lookup_result %}
+        {% if lookup_result.input_errors %}
+        <div class="notification is-warning">
+            <ul>
+                {% for error in lookup_result.input_errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <div class="box">
+            <h2 class="title is-4">Results</h2>
+            {% for result in lookup_result.results %}
+            <div class="block" style="border-bottom: 1px solid #eee; padding-bottom: 1.5rem; margin-bottom: 1.5rem;">
+                <h3 class="title is-5 mb-2">{{ result.domain }}</h3>
+
+                {% if result.error %}
+                <div class="notification is-danger is-light">
+                    {{ result.error }}
+                </div>
+                {% else %}
+                <div class="columns">
+                    <div class="column is-one-third">
+                        <p><strong>Registrar:</strong></p>
+                        <span class="tag is-info is-light is-medium"
+                            style="white-space: normal; height: auto; text-align: left; padding: 0.5rem 0.75rem;">
+                            {{ result.registrar }}
+                        </span>
+                    </div>
+                    <div class="column is-one-third">
+                        <p><strong>Expiry Date:</strong></p>
+                        <span
+                            class="tag {% if result.is_expired == True %}is-danger{% elif result.is_expired == False %}is-success{% else %}is-warning{% endif %} is-medium"
+                            style="white-space: normal; height: auto; text-align: left; padding: 0.5rem 0.75rem;">
+                            {{ result.expiry_date }}
+                        </span>
+                    </div>
+                    <div class="column is-one-third">
+                        <p><strong>Registrar Nameservers:</strong></p>
+                        <div class="tags">
+                            {% for ns in result.nameservers %}
+                            <span class="tag is-dark">{{ ns }}</span>
+                            {% empty %}
+                            <span class="tag is-light">None found</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% empty %}
+            <p>No domains were submitted.</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

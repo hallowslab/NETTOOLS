@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}NETTOOLS - SPF Lookup{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="breadcrumbs">
+            <ul>
+                <li><a href="{% url 'nettools:nettools_home' %}">NETTOOLS</a></li>
+                <li class="is-active"><a href="#" aria-current="page">SPF Lookup</a></li>
+            </ul>
+        </nav>
+
+        <h1 class="title">SPF Lookup</h1>
+        <p class="subtitle">Bulk query for domain SPF (Sender Policy Framework) TXT records and policy configuration</p>
+
+        <div class="box">
+            <form method="post" action="">
+                {% csrf_token %}
+                <div class="field">
+                    <label class="label" for="domains">Domains</label>
+                    <div class="control">
+                        <textarea id="domains" name="domains" class="textarea" rows="8"
+                            placeholder="google.com&#10;gmail.com">{{ domains }}</textarea>
+                    </div>
+                    <p class="help">One domain per line. Maximum 50 domains per lookup.</p>
+                </div>
+                <div class="field">
+                    <div class="control">
+                        <button type="submit" class="button is-primary">Run SPF Check</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        {% if lookup_result %}
+        {% if lookup_result.input_errors %}
+        <div class="notification is-warning">
+            <ul>
+                {% for error in lookup_result.input_errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <div class="box">
+            <h2 class="title is-4">Results</h2>
+            {% for result in lookup_result.results %}
+            <div class="block" style="border-bottom: 1px solid #eee; padding-bottom: 1.5rem; margin-bottom: 1.5rem;">
+                <h3 class="title is-5 mb-2">{{ result.domain }}</h3>
+
+                {% if result.error %}
+                <div class="notification is-danger is-light">
+                    {{ result.error }}
+                </div>
+                {% elif result.multiple_spf %}
+                <div class="notification is-danger is-light">
+                    <p><strong>Warning:</strong> Multiple SPF records found! Under RFC 7208 section 3.2, a domain MUST NOT have more than one SPF record. SPF checks will result in a PermError.</p>
+                </div>
+                {% endif %}
+
+                {% if not result.error and not result.records %}
+                <div class="notification is-warning is-light">
+                    No SPF records (v=spf1) found for this domain.
+                </div>
+                {% endif %}
+
+                {% for rec in result.records %}
+                <div class="box is-light mb-3">
+                    <div class="columns is-vcentered">
+                        <div class="column">
+                            <p class="subtitle is-6 mb-1"><strong>SPF Record:</strong></p>
+                            <code style="display: block; padding: 0.75rem; background: #fafafa; border-radius: 4px; border: 1px solid #eaeaea;">
+                                {{ rec.highlighted|safe }}
+                            </code>
+                        </div>
+                        <div class="column is-one-third">
+                            <p class="subtitle is-6 mb-1"><strong>Policy:</strong></p>
+                            <span class="tag {{ rec.policy_class }} is-medium">
+                                {{ rec.policy }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% empty %}
+            <p>No domains were submitted.</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
