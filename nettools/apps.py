@@ -10,17 +10,47 @@ class NettoolsConfig(AppConfig):
     icon = "🗄️"
 
     def get_dashboard_stats(self):
+        from django.db.models import Count
 
-        total_dbs_transferred = 60
+        from .models import ToolRun
 
-        total_size_output_bytes = 234567890
-        total_size_input_bytes = 1234567890
+        runs = ToolRun.objects.select_related("user")
+        total_runs = runs.count()
+        if total_runs == 0:
+            return {"Total Runs": 0}
 
-        total_size_output_gb = total_size_output_bytes / (1024**3)
-        total_size_input_gb = total_size_input_bytes / (1024**3)
+        success_runs = runs.filter(status=ToolRun.STATUS_SUCCESS).count()
+        success_pct = success_runs / total_runs * 100
 
-        return {
-            "(WIP)Total DBs Transferred": total_dbs_transferred,
-            "(WIP)Total output (GB)": f"{total_size_output_gb:.2f}",
-            "(WIP)Total input (GB)": f"{total_size_input_gb:.2f}",
+        stats = {
+            "Total Runs": total_runs,
+            "Success Rate": f"{success_pct:.1f}%",
         }
+
+        task_labels = dict(ToolRun.TASK_CHOICES)
+        counts_by_task = {
+            row["task"]: row["count"]
+            for row in runs.values("task").annotate(count=Count("id"))
+        }
+        for task_key, label in task_labels.items():
+            stats[f"{label} Runs"] = counts_by_task.get(task_key, 0)
+
+        last_run = runs.first()
+        if last_run:
+            stats["Last Run"] = (
+                f"{last_run.user.username} — {last_run.get_task_display()} "
+                f"at {last_run.executed_at:%Y-%m-%d %H:%M UTC}"
+            )
+
+        top_user = (
+            runs.values("user__username")
+            .annotate(count=Count("id"))
+            .order_by("-count", "user__username")
+            .first()
+        )
+        if top_user:
+            stats["Most Active User"] = (
+                f"{top_user['user__username']} ({top_user['count']} runs)"
+            )
+
+        return stats
