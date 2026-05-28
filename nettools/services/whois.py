@@ -7,6 +7,7 @@ from ..utils import parse_domains
 WHOIS_TIMEOUT = 5.0
 logger = logging.getLogger(__name__)
 
+
 def _query_whois_server(server: str, query: str) -> str:
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -24,6 +25,7 @@ def _query_whois_server(server: str, query: str) -> str:
         logger.error("WHOIS query failed for server %s, query %s: %s", server, query, e)
         return ""
 
+
 def _get_authoritative_server(domain: str) -> str:
     tld = domain.split(".")[-1]
     iana_response = _query_whois_server("whois.iana.org", tld)
@@ -35,17 +37,24 @@ def _get_authoritative_server(domain: str) -> str:
                 return parts[1].strip()
     return "whois.iana.org"
 
+
 def _parse_whois(raw_text: str) -> dict:
     registrar = "Unknown"
     expiry_date = "Unknown"
     nameservers = []
 
     # Regex matches
-    registrar_match = re.search(r"(?i)(?:registrar|sponsoring registrar|registrar organization):\s*(.+)", raw_text)
+    registrar_match = re.search(
+        r"(?i)(?:registrar|sponsoring registrar|registrar organization):\s*(.+)",
+        raw_text,
+    )
     if registrar_match:
         registrar = registrar_match.group(1).strip()
 
-    expiry_match = re.search(r"(?i)(?:registry expiry date|expiry date|expiration date|expiration time|expires|paid-till):\s*(.+)", raw_text)
+    expiry_match = re.search(
+        r"(?i)(?:registry expiry date|expiry date|expiration date|expiration time|expires|paid-till):\s*(.+)",
+        raw_text,
+    )
     if expiry_match:
         expiry_date = expiry_match.group(1).strip()
 
@@ -63,6 +72,7 @@ def _parse_whois(raw_text: str) -> dict:
         "expiry_date": expiry_date,
         "nameservers": nameservers,
     }
+
 
 def _is_expired(expiry_date_str: str) -> bool | None:
     if not expiry_date_str or expiry_date_str.lower() in ("unknown", "none", ""):
@@ -115,6 +125,7 @@ def _is_expired(expiry_date_str: str) -> bool | None:
 
     return None
 
+
 def lookup_whois(raw_domains: str) -> dict:
     domains, input_errors = parse_domains(raw_domains)
     results = []
@@ -123,23 +134,31 @@ def lookup_whois(raw_domains: str) -> dict:
             server = _get_authoritative_server(domain)
             raw_text = _query_whois_server(server, domain)
             parsed = _parse_whois(raw_text)
-            results.append({
-                "domain": domain,
-                "registrar": parsed["registrar"],
-                "expiry_date": parsed["expiry_date"],
-                "is_expired": _is_expired(parsed["expiry_date"]),
-                "nameservers": parsed["nameservers"],
-                "error": None if raw_text else "Failed to retrieve WHOIS data from " + server,
-            })
+            results.append(
+                {
+                    "domain": domain,
+                    "registrar": parsed["registrar"],
+                    "expiry_date": parsed["expiry_date"],
+                    "is_expired": _is_expired(parsed["expiry_date"]),
+                    "nameservers": parsed["nameservers"],
+                    "error": (
+                        None
+                        if raw_text
+                        else "Failed to retrieve WHOIS data from " + server
+                    ),
+                }
+            )
         except Exception as e:
-            results.append({
-                "domain": domain,
-                "registrar": "Unknown",
-                "expiry_date": "Unknown",
-                "is_expired": None,
-                "nameservers": [],
-                "error": f"Error: {e}",
-            })
+            results.append(
+                {
+                    "domain": domain,
+                    "registrar": "Unknown",
+                    "expiry_date": "Unknown",
+                    "is_expired": None,
+                    "nameservers": [],
+                    "error": f"Error: {e}",
+                }
+            )
     return {
         "input_errors": input_errors,
         "results": results,

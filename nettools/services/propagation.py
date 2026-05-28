@@ -20,6 +20,7 @@ RESOLVERS = [
     {"name": "OpenDNS", "ip": "208.67.222.222"},
 ]
 
+
 def lookup_propagation(raw_domains: str) -> dict:
     domains, input_errors = parse_domains(raw_domains)
     results = []
@@ -52,13 +53,15 @@ def lookup_propagation(raw_domains: str) -> dict:
                 ips = []
                 error = f"Query failed: {e}"
 
-            resolver_results.append({
-                "name": res_name,
-                "ip": res_ip,
-                "ips": ips,
-                "error": error,
-                "is_mismatch": False,
-            })
+            resolver_results.append(
+                {
+                    "name": res_name,
+                    "ip": res_ip,
+                    "ips": ips,
+                    "error": error,
+                    "is_mismatch": False,
+                }
+            )
 
             if not error and ips:
                 ip_sets.append(tuple(ips))
@@ -81,12 +84,14 @@ def lookup_propagation(raw_domains: str) -> dict:
                 if res_res["error"]:
                     all_match = False
 
-        results.append({
-            "domain": domain,
-            "resolver_results": resolver_results,
-            "all_match": all_match and len(ip_sets) == len(RESOLVERS),
-            "has_records": len(ip_sets) > 0,
-        })
+        results.append(
+            {
+                "domain": domain,
+                "resolver_results": resolver_results,
+                "all_match": all_match and len(ip_sets) == len(RESOLVERS),
+                "has_records": len(ip_sets) > 0,
+            }
+        )
 
     return {
         "input_errors": input_errors,

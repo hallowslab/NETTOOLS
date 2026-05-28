@@ -7,6 +7,7 @@ from ..utils import parse_domains
 DNS_TIMEOUT = 3.0
 logger = logging.getLogger(__name__)
 
+
 def _parse_spf_policy(record: str) -> tuple[str, str]:
     # Match any ending qualifier like -all, ~all, ?all, +all
     match = re.search(r"\b([+\-~?])all\b", record.lower())
@@ -25,6 +26,7 @@ def _parse_spf_policy(record: str) -> tuple[str, str]:
         return "Pass (Open)", "is-success"
 
     return "No explicit 'all' policy", "is-light"
+
 
 def lookup_spf(raw_domains: str) -> dict:
     domains, input_errors = parse_domains(raw_domains)
@@ -59,23 +61,42 @@ def lookup_spf(raw_domains: str) -> dict:
 
             # Highlight ~all / -all for clean display
             highlighted = record
-            highlighted = re.sub(r"\b(~all)\b", r'<span class="has-text-weight-bold has-text-warning">\1</span>', highlighted, flags=re.IGNORECASE)
-            highlighted = re.sub(r"\b(-all)\b", r'<span class="has-text-weight-bold has-text-danger">\1</span>', highlighted, flags=re.IGNORECASE)
-            highlighted = re.sub(r"\b(\?all|\+all)\b", r'<span class="has-text-weight-bold has-text-info">\1</span>', highlighted, flags=re.IGNORECASE)
+            highlighted = re.sub(
+                r"\b(~all)\b",
+                r'<span class="has-text-weight-bold has-text-warning">\1</span>',
+                highlighted,
+                flags=re.IGNORECASE,
+            )
+            highlighted = re.sub(
+                r"\b(-all)\b",
+                r'<span class="has-text-weight-bold has-text-danger">\1</span>',
+                highlighted,
+                flags=re.IGNORECASE,
+            )
+            highlighted = re.sub(
+                r"\b(\?all|\+all)\b",
+                r'<span class="has-text-weight-bold has-text-info">\1</span>',
+                highlighted,
+                flags=re.IGNORECASE,
+            )
 
-            parsed_records.append({
-                "raw": record,
-                "highlighted": highlighted,
-                "policy": policy_name,
-                "policy_class": policy_class,
-            })
+            parsed_records.append(
+                {
+                    "raw": record,
+                    "highlighted": highlighted,
+                    "policy": policy_name,
+                    "policy_class": policy_class,
+                }
+            )
 
-        results.append({
-            "domain": domain,
-            "records": parsed_records,
-            "multiple_spf": len(spf_records) > 1,
-            "error": dns_error,
-        })
+        results.append(
+            {
+                "domain": domain,
+                "records": parsed_records,
+                "multiple_spf": len(spf_records) > 1,
+                "error": dns_error,
+            }
+        )
 
     return {
         "input_errors": input_errors,

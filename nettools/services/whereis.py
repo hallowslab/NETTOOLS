@@ -50,10 +50,7 @@ def _lookup_domain(resolver, domain: str) -> dict:
     if a_error:
         result["errors"].append(a_error)
 
-    result["a_records"] = [
-        _build_ip_record(resolver, ip)
-        for ip in a_records
-    ]
+    result["a_records"] = [_build_ip_record(resolver, ip) for ip in a_records]
 
     mx_records, mx_error = _lookup_mx_records(resolver, domain)
     if mx_error:
@@ -69,10 +66,7 @@ def _lookup_domain(resolver, domain: str) -> dict:
             {
                 "priority": mx_record["priority"],
                 "host": mx_host,
-                "a_records": [
-                    _build_ip_record(resolver, ip)
-                    for ip in mx_ips
-                ],
+                "a_records": [_build_ip_record(resolver, ip) for ip in mx_ips],
             }
         )
 
@@ -112,7 +106,10 @@ def _lookup_mx_records(resolver, domain: str) -> tuple[list[dict], str | None]:
             }
             for answer in answers
         ]
-        return sorted(records, key=lambda record: (record["priority"], record["host"])), None
+        return (
+            sorted(records, key=lambda record: (record["priority"], record["host"])),
+            None,
+        )
     except dns.resolver.NoAnswer:
         return [], f"{domain}: no MX records"
     except dns.resolver.NXDOMAIN:
@@ -149,7 +146,9 @@ def _lookup_ptr(resolver, ip: str) -> tuple[str | None, str | None]:
         return _lookup_ptr_with_socket(ip, f"PTR lookup failed ({e})")
 
 
-def _lookup_ptr_with_socket(ip: str, fallback_error: str) -> tuple[str | None, str | None]:
+def _lookup_ptr_with_socket(
+    ip: str, fallback_error: str
+) -> tuple[str | None, str | None]:
     try:
         hostname, _, _ = socket.gethostbyaddr(ip)
         return hostname.rstrip("."), None
