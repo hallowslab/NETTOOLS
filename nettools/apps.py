@@ -1,5 +1,5 @@
 from django.apps import AppConfig
-
+from django.utils.safestring import mark_safe
 
 class NettoolsConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
@@ -7,7 +7,9 @@ class NettoolsConfig(AppConfig):
     verbose_name = "NETTOOLS"
     is_modular = True
     root_url = "/NETTOOLS"
-    icon = "🗄️"
+    icon = mark_safe(
+        '<img src="/static/nettools/nettools.png" alt="Nettools" style="height:1.2em; vertical-align:middle;">'
+    )
 
     def get_dashboard_stats(self):
         from django.db.models import Count
