@@ -1,6 +1,7 @@
 from django.apps import AppConfig
 from django.utils.safestring import mark_safe
 
+
 class NettoolsConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "nettools"
